@@ -1,0 +1,7 @@
+# Local secrets
+config.properties
+
+# Build output
+out/
+bin/
+*.class
