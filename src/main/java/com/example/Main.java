@@ -1,25 +1,28 @@
 package main.java.com.example;
 
-import java.io.IOException;
 import java.sql.Connection;
-import java.sql.SQLException;
+import java.awt.Desktop;
+import java.net.URI;
+import java.io.FileInputStream;
+import java.util.Properties;
 
 public class Main {
 
-    public static void main(String[] args) throws Exception {
-        try (Connection connection = DatabaseConfig.getConnection()) {
-            System.out.println("Connected to the database!");
+    public static void main(String[] args) {
+        try {
+            // Connect to the database
+            try (Connection connection = DatabaseConfig.getConnection()) {
+                System.out.println("Connected to the database!");
+            }
 
-        } catch (IOException e) {
-            System.out.println("Couldnt read config.properties file!");
-            e.printStackTrace();
+            Properties config = new Properties();
+            config.load(new FileInputStream("config.properties"));
 
-        } catch (SQLException e) {
-            System.out.println("Couldnt connect to the database!");
-            e.printStackTrace();
+            String url = config.getProperty("app.url");
+            Desktop.getDesktop().browse(URI.create(url));
 
-        } catch (IllegalStateException e) {
-            System.out.println(e.getMessage());
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
         }
     }
 }
