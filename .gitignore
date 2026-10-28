@@ -1,0 +1,8 @@
+# Keep local database credentials out of GitHub
+config.properties
+
+# Maven build output
+target/
+
+# Compiled Java files
+*.class
