@@ -8,14 +8,14 @@ public class Main {
 
     public static void main(String[] args) {
         try (Connection connection = DatabaseConfig.getConnection()) {
-            System.out.println("Veiksmīgi pievienojāmies datu bāzei!");
+            System.out.println("Connected to the database!");
 
         } catch (IOException e) {
-            System.out.println("Nevar nolasīt config.properties failu!");
+            System.out.println("Couldnt read config.properties file!");
             e.printStackTrace();
 
         } catch (SQLException e) {
-            System.out.println("Neizdevās pievienoties datu bāzei!");
+            System.out.println("Couldnt connect to the database!");
             e.printStackTrace();
 
         } catch (IllegalStateException e) {
