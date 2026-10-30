@@ -1,5 +1,5 @@
 
-package main.java.com.example;
+package com.example;
 
 import java.io.FileInputStream;
 import java.sql.Connection;
