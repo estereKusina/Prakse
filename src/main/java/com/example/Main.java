@@ -25,7 +25,7 @@ public class Main {
         true,
         StandardCharsets.UTF_8
     ));
-        // Suppress Selenium CDP version warning
+        
         Logger.getLogger(
             "org.openqa.selenium.devtools.CdpVersionFinder"
         ).setLevel(Level.OFF);
