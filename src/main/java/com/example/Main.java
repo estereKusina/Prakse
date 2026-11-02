@@ -2,7 +2,10 @@ package com.example;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.net.URL;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -14,10 +17,10 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
-import org.openqa.selenium.chrome.ChromeDriver;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 public class Main {
 
@@ -51,34 +54,45 @@ public class Main {
             List<String> downloadLinks = new ArrayList<>();
             List<String> fileNames = new ArrayList<>();
 
-            WebDriver driver = new ChromeDriver();
+            HttpClient client = HttpClient.newHttpClient();
 
-            try {
-                driver.get(url);
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .GET()
+                .build();
 
-                List<WebElement> records = driver.findElements(
-                    By.xpath("//li[contains(@class, 'resource-item')]")
-                );
+            HttpResponse<String> response = client.send(
+                request,
+                HttpResponse.BodyHandlers.ofString()
+            );
 
-                for (WebElement record : records) {
+            if (response.statusCode() != 200) {
+                throw new Exception("Neizdevās ielādēt lapu!");
+            }
 
-                    List<WebElement> links = record.findElements(
-                        By.xpath(".//a[contains(@href, '/download/')]")
-                    );
+            Document document = Jsoup.parse(response.body(), url);
 
-                    for (WebElement link : links) {
+            Elements records = document.select("li.resource-item");
 
-                        String downloadUrl = link.getAttribute("href");
+            for (Element record : records) {
 
-                        if (downloadUrl != null) {
-                            downloadLinks.add(downloadUrl);
-                            fileNames.add(record.getText().replaceAll("\\s+", " ").trim());
-                        }
-                    }
+                Element downloadButton = record.selectFirst("a[href*='/download/']");
+
+                if (downloadButton != null) {
+
+                    String downloadUrl = downloadButton.absUrl("href");
+
+                    Element title = record.selectFirst(".heading a");
+
+                    String name = title != null
+                        ? title.text()
+                        : record.text();
+
+                    name = name.replaceFirst("^\\s*\\d+\\.\\s*", "");
+
+                    downloadLinks.add(downloadUrl);
+                    fileNames.add(name);
                 }
-
-            } finally {
-                driver.quit();
             }
 
             int max = Math.min(downloadLinks.size(), 10);
@@ -88,11 +102,9 @@ public class Main {
 
             for (int i = 0; i < max; i++) {
 
-                String name = fileNames.get(i).replaceAll("\\s+", " ").trim();
-                name = name.replaceFirst("^\\d+\\.\\s*", "");
-                name = name.replaceAll("\\s*Izpētīt\\s*$", "");
-
-                System.out.printf("%2d. %s%n", i + 1, name);
+                System.out.println();
+                System.out.println((i + 1) + ". " + fileNames.get(i));
+                System.out.println("Lejupielādes saite: " + downloadLinks.get(i));
             }
 
             if (max == 0) {
@@ -112,11 +124,13 @@ public class Main {
                 return;
             }
 
-            URL fileUrl = new URL(downloadLinks.get(choice - 1));
+            String downloadUrl = downloadLinks.get(choice - 1);
 
-            String fileName = fileUrl.getPath().substring(
-                fileUrl.getPath().lastIndexOf('/') + 1
-            );
+            URI fileUri = URI.create(downloadUrl);
+
+            String fileName = Path.of(fileUri.getPath())
+                .getFileName()
+                .toString();
 
             Path destination = Path.of(
                 System.getProperty("user.home"),
@@ -124,8 +138,29 @@ public class Main {
                 fileName
             );
 
-            try (InputStream input = fileUrl.openStream()) {
-                Files.copy(input, destination, StandardCopyOption.REPLACE_EXISTING);
+            Files.createDirectories(destination.getParent());
+
+            HttpRequest downloadRequest = HttpRequest.newBuilder()
+                .uri(fileUri)
+                .GET()
+                .build();
+
+            HttpResponse<InputStream> downloadResponse = client.send(
+                downloadRequest,
+                HttpResponse.BodyHandlers.ofInputStream()
+            );
+
+            if (downloadResponse.statusCode() != 200) {
+                downloadResponse.body().close();
+                throw new Exception("Failu neizdevās lejupielādēt!");
+            }
+
+            try (InputStream input = downloadResponse.body()) {
+                Files.copy(
+                    input,
+                    destination,
+                    StandardCopyOption.REPLACE_EXISTING
+                );
             }
 
             System.out.println();
