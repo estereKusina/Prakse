@@ -16,7 +16,9 @@ import java.util.Properties;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
+import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -55,6 +57,8 @@ public class Main {
             List<String> fileNames = new ArrayList<>();
 
             HttpClient client = HttpClient.newHttpClient();
+
+            Pattern xmlPattern = Pattern.compile("(?i).*\\.xml$");
 
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -140,15 +144,9 @@ public class Main {
 
             Files.createDirectories(destination.getParent());
 
-            HttpRequest downloadRequest = HttpRequest.newBuilder()
-                .uri(fileUri)
-                .GET()
-                .build();
+            HttpRequest downloadRequest = HttpRequest.newBuilder().uri(fileUri).GET().build();
 
-            HttpResponse<InputStream> downloadResponse = client.send(
-                downloadRequest,
-                HttpResponse.BodyHandlers.ofInputStream()
-            );
+            HttpResponse<InputStream> downloadResponse = client.send(downloadRequest,HttpResponse.BodyHandlers.ofInputStream() );
 
             if (downloadResponse.statusCode() != 200) {
                 downloadResponse.body().close();
@@ -156,17 +154,77 @@ public class Main {
             }
 
             try (InputStream input = downloadResponse.body()) {
-                Files.copy(
-                    input,
-                    destination,
-                    StandardCopyOption.REPLACE_EXISTING
-                );
+                Files.copy( input, destination,StandardCopyOption.REPLACE_EXISTING);
             }
 
             System.out.println();
             System.out.println("LEJUPIELĀDE PABEIGTA");
             System.out.println("Fails: " + fileName);
             System.out.println("Atrašanās vieta: " + destination);
+
+            System.out.println();
+            System.out.println("ATRAHIVĒ ZIP ARHĪVU...");
+
+            List<Path> xmlFiles = new ArrayList<>();
+
+            Path extractFolder = destination.getParent().toAbsolutePath().normalize();
+
+            try (ZipInputStream zip = new ZipInputStream(
+                    Files.newInputStream(destination))) {
+
+                ZipEntry entry;
+
+                while ((entry = zip.getNextEntry()) != null) {
+
+                    Path newFile = extractFolder.resolve(entry.getName()).normalize();
+
+                    if (!newFile.startsWith(extractFolder)) {
+                        throw new Exception("Nedrošs faila ceļš!");
+                    }
+
+                    if (entry.isDirectory()) {
+
+                        Files.createDirectories(newFile);
+
+                    } else {
+
+                        Files.createDirectories(newFile.getParent());
+
+                        Files.copy( zip, newFile,StandardCopyOption.REPLACE_EXISTING);
+
+                        if (xmlPattern.matcher(newFile.getFileName().toString()).matches()) {
+                            xmlFiles.add(newFile);
+                        }
+                    }
+
+                    zip.closeEntry();
+                }
+            }
+
+            System.out.println("ZIP arhīvs atarhivēts!");
+
+            System.out.println();
+            System.out.println("ATRADU XML FAILUS:");
+            System.out.println("Kopā atrasti: " + xmlFiles.size());
+
+            if (xmlFiles.isEmpty()) {
+
+                System.out.println("XML faili nav atrasti!");
+
+            } else {
+
+                for (int i = 0; i < xmlFiles.size(); i++) {
+
+                    Path xmlFile = xmlFiles.get(i);
+
+                    System.out.println();
+                    System.out.println((i + 1) + ". "
+                        + xmlFile.getFileName());
+
+                    System.out.println("Apakšmape: "
+                        + extractFolder.relativize(xmlFile.getParent()));
+                }
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
