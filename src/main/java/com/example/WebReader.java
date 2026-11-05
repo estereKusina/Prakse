@@ -12,10 +12,10 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 public class WebReader {
-  public static List<Files> getDownloadableFiles(String url)
+  public static List<VzdFile> getDownloadableFiles(String url)
             throws Exception {
 
-        List<Files> files = new ArrayList<>();
+        List<VzdFile> files = new ArrayList<>();
 
         HttpClient client = HttpClient.newHttpClient();
 
@@ -45,7 +45,7 @@ public class WebReader {
 
                 name = name.replaceFirst("^\\s*\\d+\\.\\s*", "");
 
-                files.add(new Files(name, downloadUrl));
+                files.add(new VzdFile(name, downloadUrl));
             }
         }
 

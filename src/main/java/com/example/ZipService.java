@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public class ZipRemove {
+public class ZipService {
        public static List<Path> extractZipAndFindXml(Path zipFile)
             throws Exception {
 

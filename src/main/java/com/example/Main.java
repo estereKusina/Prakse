@@ -32,7 +32,7 @@ public class Main {
             }
 
             String url = config.getProperty("app.url");
-            List<Files> files =WebReader.getDownloadableFiles(url);
+            List<VzdFile> files =WebReader.getDownloadableFiles(url);
 
             int max = Math.min(files.size(), 10);
 
@@ -66,7 +66,7 @@ public class Main {
 
             String downloadUrl = files.get(choice - 1).getUrl();
 
-            Path downloadedFile = DownloadFile.downloadFile(downloadUrl);
+            Path downloadedFile = DownloadFileService.downloadFile(downloadUrl);
 
             System.out.println();
             System.out.println("LEJUPIELĀDE PABEIGTA");
@@ -78,7 +78,7 @@ public class Main {
             System.out.println();
             System.out.println("ATRAHIVĒ ZIP ARHĪVU...");
 
-            List<Path> xmlFiles =ZipRemove.extractZipAndFindXml(downloadedFile);
+            List<Path> xmlFiles =ZipService.extractZipAndFindXml(downloadedFile);
 
         } catch (Exception e) {
 

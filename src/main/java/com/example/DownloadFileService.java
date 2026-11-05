@@ -7,7 +7,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-public class DownloadFile {
+public class DownloadFileService {
    public static Path downloadFile(String downloadUrl)
             throws Exception {
 
