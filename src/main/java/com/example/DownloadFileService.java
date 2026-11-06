@@ -42,10 +42,3 @@ public class DownloadFileService {
         return destination;
     }
 }
-
-class VzdFileDownloadException extends Exception {
-
-    public VzdFileDownloadException(String message) {
-        super(message);
-    }
-}
