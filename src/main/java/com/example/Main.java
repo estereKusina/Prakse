@@ -1,6 +1,4 @@
-
 package com.example;
-
 import java.io.FileInputStream;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -45,7 +43,8 @@ public class Main {
                         continue;
 
                     case "2":
-                        break;
+                        loadDataFromWeb(scanner, dbService);
+                        continue;
 
                     case "0":
                         System.out.println("Programma tiek aizvērta!");
@@ -54,99 +53,6 @@ public class Main {
                     default:
                         System.out.println("Nepareiza izvēle!");
                         continue;
-                }
-
-                try (Connection connection = DatabaseConfig.getConnection()) {
-                    System.out.println("Connected to the database!");
-                }
-
-                Properties config = new Properties();
-
-                try (FileInputStream input =
-                        new FileInputStream("config.properties")) {
-                    config.load(input);
-                }
-
-                String url = config.getProperty("app.url");
-
-                List<VzdFile> files = WebReader.getDownloadableFiles(url);
-
-                int max = Math.min(files.size(), 10);
-
-                System.out.println();
-                System.out.println("PIEEJAMIE FAILI");
-
-                for (int i = 0; i < max; i++) {
-                    System.out.println();
-                    System.out.println((i + 1) + ". " + files.get(i).getName());
-                    System.out.println("Lejupielādes saite: "+ files.get(i).getUrl());
-                }
-
-                if (max == 0) {
-                    System.out.println("Nav atrasti lejupielādes faili!");
-                    continue;
-                }
-
-                System.out.println();
-                System.out.print( "Norādiet kārtas numuru failam, kuru apstrādāt: ");
-
-                int choice;
-
-                try {
-                    choice = Integer.parseInt(scanner.nextLine());
-                } catch (NumberFormatException e) {
-                    System.out.println("Nepareiza ievade!");
-                    continue;
-                }
-
-                if (choice < 1 || choice > max) {
-                    System.out.println("Nepareizs numurs!");
-                    continue;
-                }
-
-                String downloadUrl = files.get(choice - 1).getUrl();
-
-                Path downloadedFile = DownloadFileService.downloadFile(downloadUrl);
-
-                System.out.println();
-                System.out.println("LEJUPIELĀDE PABEIGTA");
-                System.out.println("Fails: " + downloadedFile.getFileName());
-                System.out.println("Atrašanās vieta: " + downloadedFile);
-
-                System.out.println();
-                System.out.println("ATARHIVĒ ZIP ARHĪVU...");
-
-                List<Path> xmlFiles =ZipService.extractZipAndFindXml(downloadedFile);
-
-                if (xmlFiles.isEmpty()) {
-                    System.out.println("XML faili nav atrasti!");
-                    continue;
-                }
-
-                System.out.println();
-                System.out.print( "Vai vēlaties ierakstīt XML failus datubāzē? (J/N): ");
-
-                String answer = scanner.nextLine();
-
-                if (answer.equalsIgnoreCase("J")) {
-
-                    dbService.showCategories();
-
-                    System.out.print("\nIevadiet kategorijas ID: ");
-
-                    int categoryId;
-
-                    try {
-                        categoryId = Integer.parseInt(scanner.nextLine());
-                    } catch (NumberFormatException e) {
-                        System.out.println("Nepareizs kategorijas ID!");
-                        continue;
-                    }
-
-                    dbService.importXmlFiles(xmlFiles, categoryId);
-
-                } else {
-                    System.out.println( "XML faili saglabāti datorā. Datubāze nav mainīta.");
                 }
 
             } catch (VzdFileDownloadException e) {
@@ -158,6 +64,113 @@ public class Main {
                 System.out.println("Radās cita kļūda: " + e.getMessage());
                 e.printStackTrace();
             }
+        }
+    }
+
+    public static void loadDataFromWeb(Scanner scanner, DbService dbService)
+            throws Exception {
+
+        try (Connection connection = DatabaseConfig.getConnection()) {
+            System.out.println("Connected to the database!");
+        }
+
+        Properties config = new Properties();
+
+        try (FileInputStream input =
+                new FileInputStream("config.properties")) {
+            config.load(input);
+        }
+
+        String url = config.getProperty("app.url");
+
+        if (url == null || url.isBlank()) {
+            System.out.println("WEB adrese nav norādīta config.properties failā!");
+            return;
+        }
+
+        List<VzdFile> files = WebReader.getDownloadableFiles(url);
+
+        int max = Math.min(files.size(), 10);
+
+        System.out.println();
+        System.out.println("PIEEJAMIE FAILI");
+
+        for (int i = 0; i < max; i++) {
+
+            System.out.println();
+            System.out.println((i + 1) + ". " + files.get(i).getName());
+            System.out.println("Lejupielādes saite: " + files.get(i).getUrl());
+        }
+
+        if (max == 0) {
+            System.out.println("Nav atrasti lejupielādes faili!");
+            return;
+        }
+
+        System.out.println();
+        System.out.print("Norādiet kārtas numuru failam, kuru apstrādāt: ");
+
+        int choice;
+
+        try {
+            choice = Integer.parseInt(scanner.nextLine());
+        } catch (NumberFormatException e) {
+            System.out.println("Nepareiza ievade!");
+            return;
+        }
+
+        if (choice < 1 || choice > max) {
+            System.out.println("Nepareizs numurs!");
+            return;
+        }
+
+        String downloadUrl = files.get(choice - 1).getUrl();
+
+        Path downloadedFile =
+                DownloadFileService.downloadFile(downloadUrl);
+
+        System.out.println();
+        System.out.println("LEJUPIELĀDE PABEIGTA");
+        System.out.println("Fails: " + downloadedFile.getFileName());
+        System.out.println("Atrašanās vieta: " + downloadedFile);
+
+        System.out.println();
+        System.out.println("ATRAHIVĒ ZIP ARHĪVU...");
+
+        List<Path> xmlFiles =
+                ZipService.extractZipAndFindXml(downloadedFile);
+
+        if (xmlFiles.isEmpty()) {
+            System.out.println("XML faili nav atrasti!");
+            return;
+        }
+
+        System.out.println();
+        System.out.print("Vai vēlaties ierakstīt XML failus datubāzē? (J/N): ");
+
+        String answer = scanner.nextLine();
+
+        if (answer.equalsIgnoreCase("J")) {
+
+            dbService.showCategories();
+
+            System.out.print("\nIevadiet kategorijas ID: ");
+
+            int categoryId;
+
+            try {
+                categoryId = Integer.parseInt(scanner.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("Nepareizs kategorijas ID!");
+                return;
+            }
+
+            dbService.importXmlFiles(xmlFiles, categoryId);
+
+        } else {
+
+            System.out.println(
+                    "XML faili saglabāti datorā. Datubāze nav mainīta.");
         }
     }
 }
