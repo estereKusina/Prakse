@@ -1,3 +1,4 @@
+
 package com.example;
 import java.io.FileInputStream;
 import java.nio.file.Path;
@@ -12,7 +13,7 @@ public class Main {
 
     public static void main(String[] args) throws java.io.UnsupportedEncodingException {
 
-        System.setOut(new java.io.PrintStream(new java.io.FileOutputStream(java.io.FileDescriptor.out),true, "UTF-8"));
+        System.setOut(new java.io.PrintStream( new java.io.FileOutputStream(java.io.FileDescriptor.out),true, "UTF-8"));
 
         Logger.getLogger("org.openqa.selenium").setLevel(Level.SEVERE);
         Logger.getLogger("org.openqa.selenium.devtools.CdpVersionFinder").setLevel(Level.SEVERE);
@@ -29,6 +30,7 @@ public class Main {
                 System.out.println("KADASTRA DATU SISTĒMA");
                 System.out.println("1. Apskatīt datubāzes saturu");
                 System.out.println("2. Ielādēt datus no WEB");
+                System.out.println("3. Lejupielādēt failu no datubāzes");
                 System.out.println("0. Iziet");
                 System.out.print("Izvēlieties darbību: ");
 
@@ -44,6 +46,10 @@ public class Main {
 
                     case "2":
                         loadDataFromWeb(scanner, dbService);
+                        continue;
+
+                    case "3":
+                        dbService.downloadFileFromDatabase(scanner);
                         continue;
 
                     case "0":
@@ -76,8 +82,7 @@ public class Main {
 
         Properties config = new Properties();
 
-        try (FileInputStream input =
-                new FileInputStream("config.properties")) {
+        try (FileInputStream input =new FileInputStream("config.properties")) {
             config.load(input);
         }
 
@@ -126,8 +131,7 @@ public class Main {
 
         String downloadUrl = files.get(choice - 1).getUrl();
 
-        Path downloadedFile =
-                DownloadFileService.downloadFile(downloadUrl);
+        Path downloadedFile = DownloadFileService.downloadFile(downloadUrl);
 
         System.out.println();
         System.out.println("LEJUPIELĀDE PABEIGTA");
@@ -137,8 +141,7 @@ public class Main {
         System.out.println();
         System.out.println("ATRAHIVĒ ZIP ARHĪVU...");
 
-        List<Path> xmlFiles =
-                ZipService.extractZipAndFindXml(downloadedFile);
+        List<Path> xmlFiles =ZipService.extractZipAndFindXml(downloadedFile);
 
         if (xmlFiles.isEmpty()) {
             System.out.println("XML faili nav atrasti!");
@@ -170,7 +173,7 @@ public class Main {
         } else {
 
             System.out.println(
-                    "XML faili saglabāti datorā. Datubāze nav mainīta.");
+                    "XML faili saglabāti datorā.");
         }
     }
 }
